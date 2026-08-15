@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { WebView } from "react-native-webview";
-import { InstaWebView } from "./src/InstaWebView";
+import { AdvancedScreen } from "./src/AdvancedScreen";
+import { InstaWebView, type ScanPhase, type ScanUser } from "./src/InstaWebView";
 import type { MiniTab } from "./src/tabs";
 
 const TAB_ITEMS: {
@@ -18,16 +19,62 @@ const TAB_ITEMS: {
   { id: "notifications", label: "Activity", icon: "heart-outline" },
   { id: "search", label: "Search", icon: "search-outline" },
   { id: "profile", label: "Profile", icon: "person-outline" },
+  { id: "advanced", label: "More", icon: "options-outline" },
 ];
+
+function diffLists(following: ScanUser[], followers: ScanUser[], me: string) {
+  const meLower = me.toLowerCase();
+  const followerSet = new Set(
+    followers.map((user) => user.username.toLowerCase()),
+  );
+  const followingSet = new Set(
+    following.map((user) => user.username.toLowerCase()),
+  );
+  return {
+    notFollowingBack: following.filter(
+      (user) =>
+        user.username.toLowerCase() !== meLower &&
+        !followerSet.has(user.username.toLowerCase()),
+    ),
+    notFollowedBack: followers.filter(
+      (user) =>
+        user.username.toLowerCase() !== meLower &&
+        !followingSet.has(user.username.toLowerCase()),
+    ),
+  };
+}
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
   const [tab, setTab] = useState<MiniTab>("following");
   const [canGoBack, setCanGoBack] = useState(false);
   const [messageCount, setMessageCount] = useState("");
+  const [username, setUsername] = useState<string | null>(null);
+  const [scanToken, setScanToken] = useState(0);
+  const [scanning, setScanning] = useState(false);
+  const [scanPhase, setScanPhase] = useState<ScanPhase | null>(null);
+  const [scanCount, setScanCount] = useState(0);
+  const [hasResult, setHasResult] = useState(false);
+  const [followingList, setFollowingList] = useState<ScanUser[]>([]);
+  const [followersList, setFollowersList] = useState<ScanUser[]>([]);
+  const [notFollowingBack, setNotFollowingBack] = useState<ScanUser[]>([]);
+  const [notFollowedBack, setNotFollowedBack] = useState<ScanUser[]>([]);
+  const [peekUser, setPeekUser] = useState<string | null>(null);
+
+  const startScan = () => {
+    if (!username || scanning) return;
+    setScanning(true);
+    setScanPhase("following");
+    setScanCount(0);
+    setScanToken((token) => token + 1);
+  };
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (tab === "advanced" && peekUser) {
+        setPeekUser(null);
+        return true;
+      }
       if (canGoBack) {
         webViewRef.current?.goBack();
         return true;
@@ -35,7 +82,9 @@ export default function App() {
       return false;
     });
     return () => sub.remove();
-  }, [canGoBack]);
+  }, [canGoBack, tab, peekUser]);
+
+  const showBackBar = tab === "advanced" && !!peekUser;
 
   return (
     <SafeAreaProvider>
@@ -45,11 +94,54 @@ export default function App() {
           <InstaWebView
             tab={tab}
             webViewRef={webViewRef}
+            scanToken={scanToken}
+            openProfileUser={peekUser}
             onCanGoBackChange={setCanGoBack}
+            onUsername={setUsername}
             onNewMessagesCount={(count) => {
               setMessageCount(count && count !== "0" ? count : "");
             }}
+            onScanProgress={(phase, count) => {
+              setScanPhase(phase);
+              setScanCount(count);
+            }}
+            onScanComplete={(following, followers) => {
+              const diff = diffLists(following, followers, username || "");
+              setFollowingList(following);
+              setFollowersList(followers);
+              setNotFollowingBack(diff.notFollowingBack);
+              setNotFollowedBack(diff.notFollowedBack);
+              setHasResult(true);
+              setScanning(false);
+              setScanPhase(null);
+            }}
+            onScanError={() => {
+              setScanning(false);
+              setScanPhase(null);
+            }}
           />
+          {tab === "advanced" ? (
+            <AdvancedScreen
+              hidden={!!peekUser}
+              username={username}
+              scanning={scanning}
+              scanPhase={scanPhase}
+              scanCount={scanCount}
+              hasResult={hasResult}
+              following={followingList}
+              followers={followersList}
+              notFollowingBack={notFollowingBack}
+              notFollowedBack={notFollowedBack}
+              onRefresh={startScan}
+              onOpenUser={setPeekUser}
+            />
+          ) : null}
+          {showBackBar ? (
+            <Pressable style={styles.backBar} onPress={() => setPeekUser(null)}>
+              <Ionicons name="chevron-back" size={20} color="#ffffff" />
+              <Text style={styles.backText}>Back to lists</Text>
+            </Pressable>
+          ) : null}
         </View>
         <View style={styles.bar}>
           {TAB_ITEMS.map((item) => {
@@ -58,21 +150,24 @@ export default function App() {
             return (
               <Pressable
                 key={item.id}
-                onPress={() => setTab(item.id)}
+                onPress={() => {
+                  if (item.id === "advanced") setPeekUser(null);
+                  setTab(item.id);
+                }}
                 style={styles.item}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 accessibilityLabel={item.label}
               >
-              <View>
-                <Ionicons name={item.icon} size={22} color={color} />
-                {item.id === "messages" && messageCount ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{messageCount}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={[styles.label, { color }]}>{item.label}</Text>
+                <View>
+                  <Ionicons name={item.icon} size={22} color={color} />
+                  {item.id === "messages" && messageCount ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{messageCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.label, { color }]}>{item.label}</Text>
               </Pressable>
             );
           })}
@@ -105,7 +200,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "500",
   },
   badge: {
@@ -124,5 +219,23 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 9,
     fontWeight: "700",
+  },
+  backBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  backText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

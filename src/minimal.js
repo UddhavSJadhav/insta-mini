@@ -78,39 +78,6 @@ const minimalJs = `(function () {
     return false;
   }
 
-  function hideSuggested() {
-    if (isAuthPage()) return;
-    var nodes = document.querySelectorAll("span, h2, h3");
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-      if (!el.childNodes || el.childNodes.length !== 1) continue;
-      var text = (el.textContent || "").trim();
-      if (text !== "Suggested for you" && text !== "Suggested Posts") continue;
-      var p = el.parentElement;
-      for (var j = 0; j < 7 && p && p !== document.body; j++) {
-        var rect = p.getBoundingClientRect();
-        if (p.tagName === "ASIDE" || (rect.width > 0 && rect.width < 420)) {
-          p.style.setProperty("display", "none", "important");
-          break;
-        }
-        p = p.parentElement;
-      }
-    }
-  }
-
-  function hideStoriesFeed() {
-    if (isAuthPage()) return;
-    var hide = currentTab() === "stories";
-    var articles = document.querySelectorAll("article");
-    for (var i = 0; i < articles.length; i++) {
-      if (hide) {
-        articles[i].style.setProperty("display", "none", "important");
-      } else if (articles[i].style.display === "none") {
-        articles[i].style.removeProperty("display");
-      }
-    }
-  }
-
   // Hide inbox messages floating icon
   function hideInboxIcon() {
     document.querySelectorAll("svg[aria-label='Messages']").forEach(inbox => {
@@ -148,9 +115,19 @@ const minimalJs = `(function () {
     tabsParent.style.setProperty("display", "none", "important");
 
     if (!USERNAME) {
-      const anchors = tabsParent.querySelectorAll("a");
+      const anchors = tabsParent.querySelectorAll("a[href]");
       if (anchors.length > 0) {
-        USERNAME = anchors[anchors.length - 1].getAttribute("href")?.replaceAll("/", "");
+        const href = anchors[anchors.length - 1].getAttribute("href") || "";
+        var path = href;
+        try {
+          if (href.indexOf("http") === 0) path = new URL(href).pathname;
+        } catch (e) {}
+        var parts = path.split("/").filter(function (part) {
+          return part.length > 0;
+        });
+        if (parts.length === 1 && /^[a-zA-Z0-9._]+$/.test(parts[0])) {
+          USERNAME = parts[0];
+        }
       }
 
       if (USERNAME) reportUsername(USERNAME);
@@ -242,11 +219,7 @@ const minimalJs = `(function () {
   }
 
   function apply() {
-    // if (window.ReactNativeWebView) {
-    //   window.ReactNativeWebView.postMessage(
-    //     JSON.stringify({ type: "alert", value: "loaded" })
-    //   );
-    // }
+    if (window.__instaMiniScanning) return;
 
     if (guardUrl()) return;
     // ensureStyle();
@@ -260,9 +233,6 @@ const minimalJs = `(function () {
     runExploreSearch();
     runStories();
     getNewMessagesCount();
-
-    // hideSuggested();
-    // hideStoriesFeed();
   }
 
   function hookHistory() {

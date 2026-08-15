@@ -4,7 +4,8 @@ export type MiniTab =
   | "messages"
   | "notifications"
   | "search"
-  | "profile";
+  | "profile"
+  | "advanced";
 
 export const HOME_URL = "https://www.instagram.com/";
 export const FOLLOWING_URL = "https://www.instagram.com/?variant=following";
@@ -39,6 +40,8 @@ export function tabUrl(tab: MiniTab, username: string | null): string {
       return SEARCH_URL;
     case "profile":
       return username ? `https://www.instagram.com/${username}/` : HOME_URL;
+    case "advanced":
+      return HOME_URL;
   }
 }
 

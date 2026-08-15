@@ -13,7 +13,8 @@ This is for your own account. It is not an official Instagram client.
 | Messages | `https://www.instagram.com/direct/inbox/` |
 | Activity | `https://www.instagram.com/accounts/activity/` |
 | Search | `https://www.instagram.com/explore/search/` (Explore grid is blocked) |
-| Profile | `https://www.instagram.com/{username}/` from the `ds_user` cookie |
+| Profile | `https://www.instagram.com/{username}/` from the nav profile link |
+| More | Native lists: people you follow who don’t follow back, and followers you don’t follow |
 
 ## Login
 
@@ -39,5 +40,6 @@ Scan the QR code with Expo Go (Android or iOS).
 ## Limits
 
 - Stories has no dedicated Instagram URL; that tab only filters the following page.
+- The More tab reads your own Following and Followers dialogs in the WebView and compares usernames. Large accounts take time; Instagram can change those dialogs.
 - Instagram can change layout, class names, or `?variant=following` at any time. Selectors live in `src/minimal.js`.
 - Meta’s terms do not cover unofficial clients. Use this only for yourself.
