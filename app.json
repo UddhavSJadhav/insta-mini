@@ -23,6 +23,12 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#000000"
       }
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c328722d-51ef-4dd8-8839-ae7969905752"
+      }
+    },
+    "owner": "uddhav_sj"
   }
 }

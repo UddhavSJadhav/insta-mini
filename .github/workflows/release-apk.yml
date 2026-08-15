@@ -1,0 +1,77 @@
+name: Release APK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (for example v1.0.1). Leave empty to use build-<run number>.
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: Build Android APK and GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build APK on EAS
+        run: eas build --platform android --profile apk --non-interactive --wait --json > eas-build.json
+
+      - name: Download APK
+        id: apk
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            if [ -z "$TAG" ]; then
+              TAG="build-${{ github.run_number }}"
+            fi
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          APK="insta-mini-${TAG}.apk"
+          URL=$(jq -r 'if type == "array" then .[0].artifacts.applicationArchiveUrl // .[0].artifacts.buildUrl else .artifacts.applicationArchiveUrl // .artifacts.buildUrl end' eas-build.json)
+          if [ -z "$URL" ] || [ "$URL" = "null" ]; then
+            echo "No APK URL in EAS JSON"
+            cat eas-build.json
+            exit 1
+          fi
+          curl -L --fail "$URL" -o "$APK"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.apk.outputs.tag }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" \
+              --notes "Universal Android APK (Android 7+). Sideload only — not on the Play Store."
+          fi
