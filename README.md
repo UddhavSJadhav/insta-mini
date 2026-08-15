@@ -1,6 +1,6 @@
 # Insta Mini
 
-Personal Expo app that wraps Instagram’s website. Five tabs load Instagram’s own pages and hide the extra chrome (nav, Explore, Reels, suggestions).
+Personal Expo app that wraps Instagram’s website. Tabs load Instagram’s own pages and hide the extra chrome (nav, Explore, Reels, suggestions).
 
 This is for your own account. It is not an official Instagram client.
 
@@ -11,6 +11,7 @@ This is for your own account. It is not an official Instagram client.
 | Following | `https://www.instagram.com/?variant=following` |
 | Stories | Same following page, with the post feed hidden so the stories tray stays |
 | Messages | `https://www.instagram.com/direct/inbox/` |
+| Activity | `https://www.instagram.com/accounts/activity/` |
 | Search | `https://www.instagram.com/explore/search/` (Explore grid is blocked) |
 | Profile | `https://www.instagram.com/{username}/` from the `ds_user` cookie |
 

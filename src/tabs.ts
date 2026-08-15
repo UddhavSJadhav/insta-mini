@@ -1,8 +1,15 @@
-export type MiniTab = "following" | "stories" | "messages" | "search" | "profile";
+export type MiniTab =
+  | "following"
+  | "stories"
+  | "messages"
+  | "notifications"
+  | "search"
+  | "profile";
 
 export const HOME_URL = "https://www.instagram.com/";
 export const FOLLOWING_URL = "https://www.instagram.com/?variant=following";
 export const MESSAGES_URL = "https://www.instagram.com/direct/inbox/";
+export const NOTIFICATIONS_URL = "https://www.instagram.com/accounts/activity/";
 export const SEARCH_URL = "https://www.instagram.com/explore/search/";
 
 export const CHROME_DESKTOP_UA =
@@ -21,10 +28,13 @@ export const ALLOWED_HOST_SUFFIXES = [
 export function tabUrl(tab: MiniTab, username: string | null): string {
   switch (tab) {
     case "following":
-    case "stories":
       return FOLLOWING_URL;
+    case "stories":
+      return HOME_URL;
     case "messages":
       return MESSAGES_URL;
+    case "notifications":
+      return NOTIFICATIONS_URL;
     case "search":
       return SEARCH_URL;
     case "profile":
@@ -35,24 +45,15 @@ export function tabUrl(tab: MiniTab, username: string | null): string {
 export function isAllowedHost(hostname: string | null | undefined): boolean {
   if (!hostname) return false;
   const h = hostname.toLowerCase().replace(/\.$/, "");
-  return ALLOWED_HOST_SUFFIXES.some((suffix) => h === suffix || h.endsWith(`.${suffix}`));
+  return ALLOWED_HOST_SUFFIXES.some(
+    (suffix) => h === suffix || h.endsWith(`.${suffix}`)
+  );
 }
 
-export function usernameFromCookieString(cookie: string): string | null {
-  const dsUser = cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith("ds_user="))
-    ?.slice("ds_user=".length);
-  if (!dsUser || dsUser === "undefined") return null;
-  try {
-    return decodeURIComponent(dsUser);
-  } catch {
-    return dsUser;
-  }
-}
-
-export function sameDestination(current: string | undefined, target: string): boolean {
+export function sameDestination(
+  current: string | undefined,
+  target: string
+): boolean {
   if (!current) return false;
   try {
     const a = new URL(current);

@@ -15,6 +15,7 @@ const TAB_ITEMS: {
   { id: "following", label: "Following", icon: "home-outline" },
   { id: "stories", label: "Stories", icon: "book-outline" },
   { id: "messages", label: "Messages", icon: "chatbubble-outline" },
+  { id: "notifications", label: "Activity", icon: "heart-outline" },
   { id: "search", label: "Search", icon: "search-outline" },
   { id: "profile", label: "Profile", icon: "person-outline" },
 ];
@@ -23,6 +24,7 @@ export default function App() {
   const webViewRef = useRef<WebView>(null);
   const [tab, setTab] = useState<MiniTab>("following");
   const [canGoBack, setCanGoBack] = useState(false);
+  const [messageCount, setMessageCount] = useState("");
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -44,6 +46,9 @@ export default function App() {
             tab={tab}
             webViewRef={webViewRef}
             onCanGoBackChange={setCanGoBack}
+            onNewMessagesCount={(count) => {
+              setMessageCount(count && count !== "0" ? count : "");
+            }}
           />
         </View>
         <View style={styles.bar}>
@@ -59,8 +64,15 @@ export default function App() {
                 accessibilityState={{ selected }}
                 accessibilityLabel={item.label}
               >
+              <View>
                 <Ionicons name={item.icon} size={22} color={color} />
-                <Text style={[styles.label, { color }]}>{item.label}</Text>
+                {item.id === "messages" && messageCount ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{messageCount}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={[styles.label, { color }]}>{item.label}</Text>
               </Pressable>
             );
           })}
@@ -95,5 +107,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: "500",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -10,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: "#ff3040",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "700",
   },
 });

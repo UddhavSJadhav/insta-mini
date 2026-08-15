@@ -12,7 +12,6 @@ import {
   isAllowedHost,
   sameDestination,
   tabUrl,
-  usernameFromCookieString,
   type MiniTab,
 } from "./tabs";
 
@@ -45,9 +44,15 @@ type Props = {
   tab: MiniTab;
   webViewRef: RefObject<WebView | null>;
   onCanGoBackChange?: (canGoBack: boolean) => void;
+  onNewMessagesCount?: (count: string) => void;
 };
 
-export function InstaWebView({ tab, webViewRef, onCanGoBackChange }: Props) {
+export function InstaWebView({
+  tab,
+  webViewRef,
+  onCanGoBackChange,
+  onNewMessagesCount,
+}: Props) {
   const usernameRef = useRef<string | null>(null);
   const lastTabRef = useRef<MiniTab | null>(null);
   const lastUsernameRef = useRef<string | null>(null);
@@ -119,8 +124,8 @@ export function InstaWebView({ tab, webViewRef, onCanGoBackChange }: Props) {
         rememberUsername(data.value.trim() || null);
         return;
       }
-      if (data.type === "cookies") {
-        rememberUsername(usernameFromCookieString(data.value));
+      if (data.type === "new_messages_count") {
+        onNewMessagesCount?.(data.value?.trim());
       }
     } catch {
       // Ignore unrelated page messages.

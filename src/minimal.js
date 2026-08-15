@@ -69,48 +69,14 @@ const minimalJs = `(function () {
       location.replace("https://www.instagram.com/explore/search/");
       return true;
     }
+
     if (path.indexOf("/reels") === 0) {
       location.replace("https://www.instagram.com/?variant=following");
       return true;
     }
-    if (
-      (tab === "following" || tab === "stories") &&
-      (path === "/" || path === "") &&
-      search.indexOf("variant=") === -1
-    ) {
-      location.replace("https://www.instagram.com/?variant=following");
-      return true;
-    }
+
     return false;
   }
-
-  function looksLikeChrome(el) {
-    if (!el || el === document.body || el === document.documentElement) return false;
-    var style = window.getComputedStyle(el);
-    var rect = el.getBoundingClientRect();
-    var explore = !!el.querySelector('a[href="/explore/"], a[href="/explore"]');
-    var reels = !!el.querySelector('a[href="/reels/"], a[href^="/reels"]');
-    var messages = !!el.querySelector(
-      'a[href="/direct/inbox/"], a[href="/direct/inbox"]'
-    );
-    var chromeHits = (explore ? 1 : 0) + (reels ? 1 : 0) + (messages ? 1 : 0);
-    if (chromeHits < 1) return false;
-    var isNav =
-      el.tagName === "NAV" || el.getAttribute("role") === "navigation";
-    var isFixed = style.position === "fixed" || style.position === "sticky";
-    var leftSidebar =
-      rect.height > window.innerHeight * 0.45 &&
-      rect.width < 380 &&
-      rect.left < 90;
-    var bottomBar =
-      isFixed &&
-      rect.bottom >= window.innerHeight - 24 &&
-      rect.height < 140 &&
-      rect.width > window.innerWidth * 0.6;
-    return isNav || leftSidebar || bottomBar || (isFixed && chromeHits >= 2);
-  }
-
-
 
   function hideSuggested() {
     if (isAuthPage()) return;
@@ -234,6 +200,47 @@ const minimalJs = `(function () {
     }
   }
 
+  // JS to run in Home (Stories) page
+  function runStories() {
+    if (location.pathname !== "/") return;
+
+    const storiesTray = document.querySelector("div[data-pagelet='story_tray']");
+    if(!storiesTray) return;
+
+    // Hide the next element sibling of the stories tray (HIDE HOME FEED)
+    storiesTray.parentElement?.nextElementSibling?.style.setProperty("display", "none", "important");
+
+    // Hide next button of the stories tray
+    storiesTray.querySelector("button[aria-label='Next']")?.style.setProperty("display", "none", "important");
+
+    // Modify UL elements inside stories tray
+    const ulElement = storiesTray.querySelector("ul");
+    if(!ulElement) return;
+
+    ulElement.style.setProperty("height", "100vh", "important");
+    ulElement.style.setProperty("width", "100vw", "important");
+    ulElement.style.setProperty("flex-wrap", "nowrap", "important");
+  }
+
+  // Get message notification count
+  function getNewMessagesCount() {
+    let messageNotificationCountDiv = document.querySelector("svg[aria-label='Messages']")?.nextElementSibling;
+    if(!messageNotificationCountDiv) {
+      messageNotificationCountDiv = document.querySelector("svg[aria-label='Messages']")?.parentElement?.nextElementSibling;
+    }
+    if(!messageNotificationCountDiv) return;
+
+    const count = messageNotificationCountDiv.querySelector("span")?.textContent?.trim() || "0";
+
+    try {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "new_messages_count", value: count })
+        );
+      }
+    } catch (e) {}
+  }
+
   function apply() {
     // if (window.ReactNativeWebView) {
     //   window.ReactNativeWebView.postMessage(
@@ -251,6 +258,8 @@ const minimalJs = `(function () {
 
     runInbox();
     runExploreSearch();
+    runStories();
+    getNewMessagesCount();
 
     // hideSuggested();
     // hideStoriesFeed();
