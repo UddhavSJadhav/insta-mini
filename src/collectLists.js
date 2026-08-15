@@ -59,7 +59,7 @@ const collectListsJs = `(function () {
 
   function rowOf(el) {
     var cur = el;
-    for (var i = 0; i < 8 && cur; i++) {
+    for (var i = 0; i < 10 && cur; i++) {
       var img = cur.querySelector ? cur.querySelector("img") : null;
       var links = cur.querySelectorAll ? cur.querySelectorAll("a[href]") : [];
       if (img && links.length) return cur;
@@ -71,7 +71,7 @@ const collectListsJs = `(function () {
   function usersFrom(root) {
     var map = {};
     if (!root) return [];
-    var links = root.querySelectorAll("a[href]");
+    var links = root.querySelectorAll('a[href]:not([style])');
     for (var i = 0; i < links.length; i++) {
       var username = usernameFromHref(links[i].getAttribute("href") || "");
       if (!username) continue;
