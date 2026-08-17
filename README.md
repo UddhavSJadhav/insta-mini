@@ -86,7 +86,7 @@ npm run build:apk
 - Stories has no dedicated Instagram URL; that tab only filters the following page.
 - The More tab reads your own Following and Followers dialogs in the WebView and compares usernames. Large accounts take time; Instagram can change those dialogs.
 - Instagram can change layout, class names, or `?variant=following` at any time. Selectors live in `src/minimal.js`.
-- Meta’s terms do not cover unofficial clients. Use this only for yourself.
+- Meta’s terms do not cover unofficial clients. Use this only for yourself. Scanning Following/Followers can look like automation, so there is a real (not guaranteed) risk of checkpoints or account restrictions — especially if you scan often.
 
 ## License
 

@@ -409,6 +409,8 @@ export function InstaWebView({
       userAgent={CHROME_DESKTOP_UA}
       javaScriptEnabled
       domStorageEnabled
+      cacheEnabled
+      cacheMode="LOAD_DEFAULT"
       sharedCookiesEnabled
       thirdPartyCookiesEnabled
       setSupportMultipleWindows
