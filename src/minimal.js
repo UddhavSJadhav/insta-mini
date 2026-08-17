@@ -5,6 +5,7 @@ const minimalJs = `(function () {
     /\\/accounts\\/(login|emailsignup|password|onetap)|\\/challenge|\\/two_factor|\\/consent|\\/auth|\\/session\\//;
 
   let USERNAME = "";
+  let IS_MOBILE_USER_AGENT = navigator.userAgent.includes("Mobile");
 
   function currentTab() {
     return document.documentElement.getAttribute(TAB_ATTR) || "following";
@@ -136,6 +137,16 @@ const minimalJs = `(function () {
 
   // JS to run in inbox page
   function runInbox() {
+    if(IS_MOBILE_USER_AGENT && location.pathname.includes("direct")) {
+      const backButton = document.querySelector("svg[aria-label='Back']");
+      if(backButton) backButton.style.setProperty("display", "none", "important");
+
+      const downChevronIcon = document.querySelector("svg[aria-label='Down chevron icon']");
+      if(downChevronIcon) downChevronIcon.style.setProperty("display", "none", "important");
+
+      return;
+    }
+
     if (!location.pathname.includes("inbox")) return;
 
     const threadList = document.querySelector("div[aria-label='Thread list']");
@@ -186,6 +197,18 @@ const minimalJs = `(function () {
 
     // Hide the next element sibling of the stories tray (HIDE HOME FEED)
     storiesTray.parentElement?.nextElementSibling?.style.setProperty("display", "none", "important");
+
+    if(IS_MOBILE_USER_AGENT) {
+      const flexBox = storiesTray.querySelector("div[style*='display: flex']");
+      if(!flexBox) return;
+      
+      flexBox.style.setProperty("height", "100vh", "important");
+      flexBox.style.setProperty("width", "100vw", "important");
+      flexBox.style.setProperty("justify-content", "flex-start", "important");
+      flexBox.style.setProperty("align-items", "center", "important");
+
+      return;
+    }
 
     // Hide next button of the stories tray
     storiesTray.querySelector("button[aria-label='Next']")?.style.setProperty("display", "none", "important");

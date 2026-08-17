@@ -81,6 +81,7 @@ function asScanUser(value: unknown): ScanUser | null {
 type Props = {
   tab: MiniTab;
   webViewRef: RefObject<WebView | null>;
+  userAgent?: string;
   scanToken?: number;
   openProfileUser?: string | null;
   onCanGoBackChange?: (canGoBack: boolean) => void;
@@ -95,6 +96,7 @@ type Props = {
 export function InstaWebView({
   tab,
   webViewRef,
+  userAgent = CHROME_DESKTOP_UA,
   scanToken = 0,
   openProfileUser = null,
   onCanGoBackChange,
@@ -406,7 +408,7 @@ export function InstaWebView({
     <WebView
       ref={webViewRef}
       source={{ uri: activeUri }}
-      userAgent={CHROME_DESKTOP_UA}
+      userAgent={userAgent}
       javaScriptEnabled
       domStorageEnabled
       cacheEnabled

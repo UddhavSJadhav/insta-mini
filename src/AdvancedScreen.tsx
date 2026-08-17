@@ -6,6 +6,7 @@ import {
   Image,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -39,6 +40,8 @@ type Props = {
   notFollowedBack: ScanUser[];
   onRefresh: () => void;
   onOpenUser: (username: string) => void;
+  mobileUa: boolean;
+  onMobileUaChange: (value: boolean) => void;
 };
 
 const UserRow = memo(function UserRow({
@@ -85,6 +88,8 @@ export function AdvancedScreen({
   notFollowedBack,
   onRefresh,
   onOpenUser,
+  mobileUa,
+  onMobileUaChange,
 }: Props) {
   const [subTab, setSubTab] = useState<SubTab>("following");
   const lists: Record<SubTab, ScanUser[]> = {
@@ -138,6 +143,20 @@ export function AdvancedScreen({
             </Pressable>
           )
         ) : null}
+      </View>
+      <View style={styles.uaRow}>
+        <View style={styles.uaCopy}>
+          <Text style={styles.uaLabel}>Mobile site</Text>
+          <Text style={styles.uaHint}>
+            Uses a phone browser. Scan and layout may differ from desktop.
+          </Text>
+        </View>
+        <Switch
+          value={mobileUa}
+          onValueChange={onMobileUaChange}
+          trackColor={{ false: "#333333", true: "#3d7a4a" }}
+          thumbColor="#ffffff"
+        />
       </View>
       <Text style={styles.hint}>
         Your account only. Reads Instagram’s Following and Followers dialogs.
@@ -226,6 +245,27 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 22,
     fontWeight: "700",
+  },
+  uaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 12,
+  },
+  uaCopy: {
+    flex: 1,
+  },
+  uaLabel: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  uaHint: {
+    color: "#8e8e8e",
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
   hint: {
     color: "#8e8e8e",

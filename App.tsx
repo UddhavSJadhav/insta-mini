@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
@@ -6,7 +7,11 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { WebView } from "react-native-webview";
 import { AdvancedScreen } from "./src/AdvancedScreen";
 import { InstaWebView, type ScanPhase, type ScanUser } from "./src/InstaWebView";
-import type { MiniTab } from "./src/tabs";
+import {
+  CHROME_DESKTOP_UA,
+  CHROME_MOBILE_UA,
+  type MiniTab,
+} from "./src/tabs";
 
 const TAB_ITEMS: {
   id: MiniTab;
@@ -21,6 +26,8 @@ const TAB_ITEMS: {
   { id: "profile", label: "Profile", icon: "person-outline" },
   { id: "advanced", label: "More", icon: "options-outline" },
 ];
+
+const MOBILE_UA_KEY = "insta-mini.mobileUa";
 
 function diffLists(following: ScanUser[], followers: ScanUser[], me: string) {
   const meLower = me.toLowerCase();
@@ -60,6 +67,18 @@ export default function App() {
   const [notFollowingBack, setNotFollowingBack] = useState<ScanUser[]>([]);
   const [notFollowedBack, setNotFollowedBack] = useState<ScanUser[]>([]);
   const [peekUser, setPeekUser] = useState<string | null>(null);
+  const [mobileUa, setMobileUa] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(MOBILE_UA_KEY).then((value) => {
+      if (value === "1") setMobileUa(true);
+    });
+  }, []);
+
+  const onMobileUaChange = (value: boolean) => {
+    setMobileUa(value);
+    AsyncStorage.setItem(MOBILE_UA_KEY, value ? "1" : "0");
+  };
 
   const startScan = () => {
     if (!username || scanning) return;
@@ -92,8 +111,10 @@ export default function App() {
         <StatusBar style="light" />
         <View style={styles.web}>
           <InstaWebView
+            key={mobileUa ? "ua-mobile" : "ua-desktop"}
             tab={tab}
             webViewRef={webViewRef}
+            userAgent={mobileUa ? CHROME_MOBILE_UA : CHROME_DESKTOP_UA}
             scanToken={scanToken}
             openProfileUser={peekUser}
             onCanGoBackChange={setCanGoBack}
@@ -134,6 +155,8 @@ export default function App() {
               notFollowedBack={notFollowedBack}
               onRefresh={startScan}
               onOpenUser={setPeekUser}
+              mobileUa={mobileUa}
+              onMobileUaChange={onMobileUaChange}
             />
           ) : null}
           {showBackBar ? (

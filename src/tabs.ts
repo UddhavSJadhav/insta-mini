@@ -17,6 +17,10 @@ export const CHROME_DESKTOP_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/131.0.6778.135 Safari/537.36";
 
+export const CHROME_MOBILE_UA =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36";
+
 export const ALLOWED_HOST_SUFFIXES = [
   "instagram.com",
   "facebook.com",
