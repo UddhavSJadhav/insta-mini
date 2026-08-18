@@ -6,12 +6,12 @@ import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { WebView } from "react-native-webview";
 import { AdvancedScreen } from "./src/AdvancedScreen";
-import { InstaWebView, type ScanPhase, type ScanUser } from "./src/InstaWebView";
 import {
-  CHROME_DESKTOP_UA,
-  CHROME_MOBILE_UA,
-  type MiniTab,
-} from "./src/tabs";
+  InstaWebView,
+  type ScanPhase,
+  type ScanUser,
+} from "./src/InstaWebView";
+import { CHROME_DESKTOP_UA, CHROME_MOBILE_UA, type MiniTab } from "./src/tabs";
 
 const TAB_ITEMS: {
   id: MiniTab;
@@ -32,21 +32,21 @@ const MOBILE_UA_KEY = "insta-mini.mobileUa";
 function diffLists(following: ScanUser[], followers: ScanUser[], me: string) {
   const meLower = me.toLowerCase();
   const followerSet = new Set(
-    followers.map((user) => user.username.toLowerCase()),
+    followers.map((user) => user.username.toLowerCase())
   );
   const followingSet = new Set(
-    following.map((user) => user.username.toLowerCase()),
+    following.map((user) => user.username.toLowerCase())
   );
   return {
     notFollowingBack: following.filter(
       (user) =>
         user.username.toLowerCase() !== meLower &&
-        !followerSet.has(user.username.toLowerCase()),
+        !followerSet.has(user.username.toLowerCase())
     ),
     notFollowedBack: followers.filter(
       (user) =>
         user.username.toLowerCase() !== meLower &&
-        !followingSet.has(user.username.toLowerCase()),
+        !followingSet.has(user.username.toLowerCase())
     ),
   };
 }
@@ -67,11 +67,11 @@ export default function App() {
   const [notFollowingBack, setNotFollowingBack] = useState<ScanUser[]>([]);
   const [notFollowedBack, setNotFollowedBack] = useState<ScanUser[]>([]);
   const [peekUser, setPeekUser] = useState<string | null>(null);
-  const [mobileUa, setMobileUa] = useState(false);
+  const [mobileUa, setMobileUa] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(MOBILE_UA_KEY).then((value) => {
-      if (value === "1") setMobileUa(true);
+      if (value === "0") setMobileUa(false);
     });
   }, []);
 

@@ -104,7 +104,7 @@ export function AdvancedScreen({
     ({ item }: { item: ScanUser }) => (
       <UserRow item={item} onOpen={onOpenUser} />
     ),
-    [onOpenUser],
+    [onOpenUser]
   );
 
   const getItemLayout = useCallback(
@@ -113,7 +113,7 @@ export function AdvancedScreen({
       offset: ROW_HEIGHT * index,
       index,
     }),
-    [],
+    []
   );
 
   return (
@@ -221,12 +221,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   rootScan: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
-    zIndex: 2,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.92)",
     paddingHorizontal: 16,
     paddingTop: 8,
