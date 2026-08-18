@@ -135,8 +135,113 @@ const minimalJs = `(function () {
     }
   }
 
+  function isDirectOrInbox() {
+    var path = location.pathname || "";
+    return path.indexOf("/direct") !== -1 || path.indexOf("inbox") !== -1;
+  }
+
+  function hasPlayingReel() {
+    if (!IS_MOBILE_USER_AGENT || !isDirectOrInbox()) return false;
+    var videos = document.querySelectorAll("video");
+    var minH = Math.min(window.innerHeight * 0.35, 220);
+    for (var i = 0; i < videos.length; i++) {
+      var video = videos[i];
+      if (video.paused) continue;
+      var box = video.getBoundingClientRect();
+      if (box.width > 80 && box.height > minH) return true;
+    }
+    return false;
+  }
+
+  var reelTouchStartX = 0;
+  var reelTouchStartY = 0;
+  var reelGesturesLocked = false;
+
+  function bindReelVideoEvents() {
+    var videos = document.querySelectorAll("video");
+    for (var i = 0; i < videos.length; i++) {
+      if (videos[i].__instaMiniReelBound) continue;
+      videos[i].__instaMiniReelBound = true;
+      videos[i].addEventListener("play", lockInboxReelSwipe);
+      videos[i].addEventListener("pause", lockInboxReelSwipe);
+      videos[i].addEventListener("ended", lockInboxReelSwipe);
+    }
+  }
+
+  function setPageGestureLock(lock) {
+    var html = document.documentElement;
+    var body = document.body;
+    if (lock) {
+      html.style.setProperty("overscroll-behavior", "none", "important");
+      html.style.setProperty("touch-action", "none", "important");
+      if (body) {
+        body.style.setProperty("overscroll-behavior", "none", "important");
+        body.style.setProperty("touch-action", "none", "important");
+      }
+    } else {
+      html.style.removeProperty("overscroll-behavior");
+      html.style.removeProperty("touch-action");
+      if (body) {
+        body.style.removeProperty("overscroll-behavior");
+        body.style.removeProperty("touch-action");
+      }
+    }
+    reelGesturesLocked = lock;
+  }
+
+  function lockInboxReelSwipe() {
+    bindReelVideoEvents();
+    setPageGestureLock(hasPlayingReel());
+  }
+
+  function pointFromEvent(e) {
+    if (e.touches && e.touches.length) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function onReelPointerStart(e) {
+    var p = pointFromEvent(e);
+    reelTouchStartX = p.x;
+    reelTouchStartY = p.y;
+  }
+
+  function onReelPointerMove(e) {
+    if (!reelGesturesLocked && !hasPlayingReel()) return;
+    var p = pointFromEvent(e);
+    var dx = Math.abs(p.x - reelTouchStartX);
+    var dy = Math.abs(p.y - reelTouchStartY);
+    if (dy > 8 && dy >= dx) {
+      e.preventDefault();
+    }
+  }
+
+  function hookReelSwipe() {
+    if (window.__instaMiniReelSwipe) return;
+    window.__instaMiniReelSwipe = true;
+    document.addEventListener("touchstart", onReelPointerStart, {
+      capture: true,
+      passive: true,
+    });
+    document.addEventListener("touchmove", onReelPointerMove, {
+      capture: true,
+      passive: false,
+    });
+    document.addEventListener("pointerdown", onReelPointerStart, {
+      capture: true,
+      passive: true,
+    });
+    document.addEventListener("pointermove", onReelPointerMove, {
+      capture: true,
+      passive: false,
+    });
+  }
+
   // JS to run in inbox page
   function runInbox() {
+    lockInboxReelSwipe();
+
     if(IS_MOBILE_USER_AGENT && location.pathname.includes("direct")) {
       const backButton = document.querySelector("svg[aria-label='Back']");
       if(backButton) backButton.style.setProperty("display", "none", "important");
@@ -291,6 +396,7 @@ const minimalJs = `(function () {
     });
   }
 
+  hookReelSwipe();
   hookHistory();
   apply();
 })();`;
