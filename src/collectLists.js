@@ -68,11 +68,41 @@ const collectListsJs = `(function () {
     return el.parentElement;
   }
 
+  function listPageKind() {
+    var path = (location.pathname || "").toLowerCase();
+    if (path.indexOf("/followers") !== -1) return "followers";
+    if (path.indexOf("/following") !== -1) return "following";
+    return "";
+  }
+
+  function onMatchingListPage() {
+    return listPageKind() === kind;
+  }
+
+  function findSuggestedNode(root) {
+    if (!root || !root.querySelectorAll) return null;
+    var nodes = root.querySelectorAll("h1, h2, h3, span");
+    for (var i = 0; i < nodes.length; i++) {
+      var text = (nodes[i].textContent || "").replace(/\\s+/g, " ").trim().toLowerCase();
+      if (text.length > 40) continue;
+      if (
+        text === "suggested" ||
+        text === "suggested for you" ||
+        text.indexOf("suggested for you") === 0
+      ) {
+        return nodes[i];
+      }
+    }
+    return null;
+  }
+
   function usersFrom(root) {
     var map = {};
     if (!root) return [];
+    var suggested = findSuggestedNode(root);
     var links = root.querySelectorAll('a[href]:not([style])');
     for (var i = 0; i < links.length; i++) {
+      if (suggested && (suggested.compareDocumentPosition(links[i]) & 4)) continue;
       var username = usernameFromHref(links[i].getAttribute("href") || "");
       if (!username) continue;
       var key = username.toLowerCase();
@@ -157,6 +187,26 @@ const collectListsJs = `(function () {
       }
     }
     return null;
+  }
+
+  function findListRoot() {
+    var dialog = findListDialog();
+    if (dialog) return dialog;
+    if (!onMatchingListPage()) return null;
+    var want = kind === "followers" ? "Followers" : "Following";
+    var headings = document.querySelectorAll("h1, h2");
+    for (var h = 0; h < headings.length; h++) {
+      var title = (headings[h].textContent || "").replace(/\\s+/g, " ").trim();
+      if (title !== want) continue;
+      var el = headings[h];
+      for (var k = 0; k < 12 && el; k++) {
+        if (el.querySelectorAll && el.querySelectorAll('a[href^="/"]').length > 4) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+    }
+    return document.querySelector("main") || document.body;
   }
 
   function findScroller(dialog) {
@@ -274,7 +324,7 @@ const collectListsJs = `(function () {
     return false;
   }
 
-  var awaitingClose = kind === "followers";
+  var awaitingClose = kind === "followers" && !onMatchingListPage();
   var closeTries = 0;
   var stagnant = 0;
   var lastCount = 0;
@@ -293,6 +343,10 @@ const collectListsJs = `(function () {
 
   function openList() {
     if (dismissConfirm()) return false;
+    if (onMatchingListPage()) {
+      awaitingClose = false;
+      return true;
+    }
     var dialog = findListDialog();
 
     if (kind === "followers") {
@@ -324,7 +378,7 @@ const collectListsJs = `(function () {
   function finish(users) {
     if (!alive() && posted) return;
     dismissConfirm();
-    if (kind === "following") closeDialog();
+    if (kind === "following" && !onMatchingListPage()) closeDialog();
     debug(
       "finish users=" +
         (users ? users.length : 0) +
@@ -351,7 +405,7 @@ const collectListsJs = `(function () {
       opened = true;
       debug("openList first try");
       openList();
-    } else if (awaitingClose || !findListDialog()) {
+    } else if (awaitingClose || !findListRoot()) {
       if (ticks % 2 === 0) {
         debug("openList retry tick=" + ticks + " awaitingClose=" + awaitingClose);
         openList();
@@ -359,10 +413,10 @@ const collectListsJs = `(function () {
     }
 
     dismissConfirm();
-    var dialog = findListDialog();
-    var ready = !!dialog && !awaitingClose;
-    var scroller = ready ? findScroller(dialog) : null;
-    var users = ready ? usersFrom(scroller || dialog) : [];
+    var root = findListRoot();
+    var ready = !!root && !awaitingClose;
+    var scroller = ready ? findScroller(root) : null;
+    var users = ready ? usersFrom(scroller || root) : [];
     if (users.length) lastUsers = users;
 
     if (ticks === 1 || ticks % 6 === 0) {
@@ -372,7 +426,9 @@ const collectListsJs = `(function () {
           " url=" +
           location.pathname +
           " overlay=" +
-          !!dialog +
+          !!findListDialog() +
+          " page=" +
+          onMatchingListPage() +
           " ready=" +
           ready +
           " scroll=" +
@@ -399,8 +455,14 @@ const collectListsJs = `(function () {
 
     if (ready && scroller) {
       scroller.scrollTop = scroller.scrollHeight;
-    } else if (ready && dialog) {
-      dialog.scrollTop = dialog.scrollHeight;
+    } else if (ready && root) {
+      root.scrollTop = root.scrollHeight;
+    }
+    if (ready && onMatchingListPage()) {
+      window.scrollTo(
+        0,
+        Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
+      );
     }
 
     if (ticks >= maxTicks) {
@@ -411,7 +473,7 @@ const collectListsJs = `(function () {
       finish(users);
       return;
     }
-    if (ready && dialog && users.length === 0 && stagnant >= 24) {
+    if (ready && root && users.length === 0 && stagnant >= 24) {
       finish(users);
       return;
     }

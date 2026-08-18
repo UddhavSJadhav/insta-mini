@@ -172,6 +172,11 @@ const minimalJs = `(function () {
       const backButton = nav.querySelector("div[role='button'][aria-label='Back']");
       if (backButton) backButton.style.setProperty("display", "none", "important");
 
+      const cancelButton = Array.from(nav.querySelectorAll("div[role='button']")).find(
+        btn => btn.textContent.trim() === "Cancel"
+      );
+      if (cancelButton) cancelButton.style.setProperty("display", "none", "important");
+
       const firstHTMLDiv = nav.querySelector("div.html-div")
       const parent = firstHTMLDiv?.parentElement;
       if (parent) {

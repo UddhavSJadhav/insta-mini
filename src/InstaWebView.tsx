@@ -125,6 +125,7 @@ export function InstaWebView({
   const [isScanning, setIsScanning] = useState(false);
   const activeUriRef = useRef(activeUri);
   activeUriRef.current = activeUri;
+  const isMobileUa = userAgent.includes("Mobile");
 
   const clearTimers = () => {
     retryTimersRef.current.forEach(clearTimeout);
@@ -213,10 +214,22 @@ export function InstaWebView({
   const navigateScan = (kind: ScanPhase, username: string) => {
     scanningRef.current = true;
     collectKindRef.current = kind;
+    setIsScanning(true);
+    if (isMobileUa) {
+      const listUrl = `https://www.instagram.com/${username}/${kind}/`;
+      console.log("[scan] list-page", kind, listUrl);
+      onScanDebug?.(`list-page ${kind} ${listUrl}`);
+      if (sameDestination(activeUriRef.current, listUrl)) {
+        webViewRef.current?.reload();
+      } else {
+        setActiveUri(listUrl);
+      }
+      armCollector(kind);
+      return;
+    }
     const profileUrl = `https://www.instagram.com/${username}/`;
     console.log("[scan] profile", kind, profileUrl);
     onScanDebug?.(`profile ${kind} ${profileUrl}`);
-    setIsScanning(true);
     if (!profileLoadedRef.current) {
       profileLoadedRef.current = true;
       const onProfile = pathOf(activeUriRef.current) === `/${username.toLowerCase()}`;
@@ -314,7 +327,7 @@ export function InstaWebView({
 
   const onShouldStartLoadWithRequest = (request: ShouldStartLoadRequest) => {
     if (request.isTopFrame === false) return true;
-    if (scanningRef.current && isListPath(request.url)) {
+    if (scanningRef.current && isListPath(request.url) && !isMobileUa) {
       onScanDebug?.(`block list-url ${request.url}`);
       return false;
     }
@@ -431,7 +444,7 @@ export function InstaWebView({
         console.log("[scan] loadEnd", url, "scanning=", scanningRef.current, "kind=", kind);
         onScanDebug?.(`loadEnd ${url}`);
         if (scanningRef.current && kind && url.includes("instagram.com")) {
-          if (isListPath(url)) {
+          if (isListPath(url) && !isMobileUa) {
             onScanDebug?.(`skip inject list-url ${url}`);
           } else if (progressCountRef.current > 0) {
             onScanDebug?.(`skip inject in-progress ${kind}`);
